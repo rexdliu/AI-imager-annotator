@@ -2,7 +2,7 @@
 
 A Streamlit-based application for annotating images with bounding boxes and generating bilingual question-answer pairs using Google's Gemini AI for vision language model training.
 
-![Vision Schema Generator](assets/preview.png)
+![Vision Schema Generator](Dashboard.jpg)
 
 ## Features
 
