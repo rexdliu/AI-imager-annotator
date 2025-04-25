@@ -1,5 +1,7 @@
 """CLI: Rename all files in the dataset directory to UUIDs and update annotations."""
-
+"""文件重命名功能 :在侧边栏的"Dataset Utilities"部分有一个"Rename to UUIDs"按钮
+点击后会批量将数据集中的所有图像文件重命名为UUID格式（例如：123e4567-e89b-12d3-a456-426614174000.jpg）
+同时更新所有相关的注释文件，确保它们仍然引用正确的图像"""
 import os
 import sys
 import uuid
