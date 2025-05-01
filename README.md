@@ -40,7 +40,7 @@ A Streamlit-based application for annotating images with bounding boxes and gene
    venv\Scripts\activate
    
    # On macOS/Linux
-   source venv/bin/activate
+   source .venv/bin/activate
    ```
 
 3. Install dependencies:
