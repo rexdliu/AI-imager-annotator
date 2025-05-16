@@ -40,7 +40,7 @@ A Streamlit-based application for annotating images with bounding boxes and gene
    venv\Scripts\activate
    
    # On macOS/Linux
-   source venv/bin/activate
+   source .venv/bin/activate
    ```
 
 3. Install dependencies:
@@ -253,3 +253,5 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 ---
 
 *Vision Schema Generator is an open-source project designed to simplify the process of building high-quality vision-language datasets.*
+*Any questions can directly contact author-Liu *
+*Email: rexliu2004@163.com*
