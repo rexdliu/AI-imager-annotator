@@ -35,12 +35,14 @@ A Streamlit-based application for annotating images with bounding boxes and gene
 2. Create and activate a virtual environment:
    ```bash
    python -m venv venv
+// mac
+ python3 -m venv venv
    
    # On Windows
    venv\Scripts\activate
    
    # On macOS/Linux
-   source .venv/bin/activate
+   source venv/bin/activate
    ```
 
 3. Install dependencies:
