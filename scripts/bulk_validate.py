@@ -1,3 +1,4 @@
+#newest version
 """CLI: Validate every JSON under annotated_dataset/schema_* using Pydantic."""
 
 from pathlib import Path

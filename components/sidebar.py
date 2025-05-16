@@ -1,3 +1,4 @@
+#newest version
 """Sidebar file-explorer with hierarchical view, search, filtering, and rename button."""
 
 from __future__ import annotations

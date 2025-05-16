@@ -1,3 +1,4 @@
+#newest version
 """JSON viewer with edit capabilities and syntax highlighting for schema display and editing."""
 
 import json

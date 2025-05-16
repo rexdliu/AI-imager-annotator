@@ -1,3 +1,4 @@
+#newest version
 """Vision Schema Generator - Main App Entry Point
 
 A Streamlit application for annotating images with bounding boxes and generating

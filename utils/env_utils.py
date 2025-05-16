@@ -1,9 +1,9 @@
+#newest version
 """Environment variable utilities for loading and accessing configuration."""
 
 import os
 from typing import Optional
 from pathlib import Path
-
 from dotenv import load_dotenv
 
 # Load .env file from project root
