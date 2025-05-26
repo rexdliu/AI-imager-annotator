@@ -68,7 +68,7 @@ A Streamlit-based application for annotating images with bounding boxes and gene
 
 Start the application:
 ```bash
-streamlit run main.py
+streamlit run app.py
 ```
 
 ### Basic Workflow
