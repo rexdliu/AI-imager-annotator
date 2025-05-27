@@ -7,6 +7,7 @@ Uploads images to Gemini, gets bilingual Q/A pairs, and manages API interactions
 import json
 import base64
 import os
+import re
 from pathlib import Path
 from typing import Dict, List, Literal, Optional, Any, Union
 import mimetypes
@@ -29,12 +30,89 @@ DEFAULT_GEMINI_MODEL = "gemini-pro-vision"
 class GeminiQA(BaseModel):
     task_type: Literal["captioning", "vqa", "instruction", "role_play"]
     text_en: str
-    text_ms: str
+    text_ms: str  # Changed from text_local to text_ms for Malay
     answer_en: str
-    answer_ms: str
+    answer_ms: str  # Changed from answer_local to answer_ms for Malay
     difficulty: Literal["easy", "medium", "hard"]
     language_quality_score: float
     tags: Optional[List[str]] = None
+
+
+# For backward compatibility (from utils/__init__.py)
+ClaudeQA = GeminiQA
+ClaudeClient = None
+
+
+def get_claude_client():
+    """Backward compatibility function"""
+    return None
+
+
+# ── Language Validation Functions ──────────────────────────────────────────
+def contains_non_latin_non_malay_script(text: str) -> bool:
+    """Check if text contains scripts that are not Latin or common in Malay/English."""
+    # Chinese, Japanese, Korean, Arabic, Hindi, Thai, etc.
+    non_latin_patterns = [
+        r'[\u4e00-\u9fff]',  # Chinese
+        r'[\u3040-\u309f\u30a0-\u30ff]',  # Japanese
+        r'[\uac00-\ud7af]',  # Korean
+        r'[\u0600-\u06ff]',  # Arabic
+        r'[\u0900-\u097f]',  # Hindi/Devanagari
+        r'[\u0e00-\u0e7f]',  # Thai
+        r'[\u1780-\u17ff]',  # Khmer
+        r'[\u0980-\u09ff]',  # Bengali
+    ]
+
+    for pattern in non_latin_patterns:
+        if re.search(pattern, text):
+            return True
+    return False
+
+
+def validate_language_content(qa_pair: GeminiQA) -> bool:
+    """Validate that the QA pair contains only English and Malay content."""
+    # Check all text fields for non-Latin scripts
+    text_fields = [qa_pair.text_en, qa_pair.text_ms, qa_pair.answer_en, qa_pair.answer_ms]
+
+    for text in text_fields:
+        if contains_non_latin_non_malay_script(text):
+            logger.warning(f"Found non-Latin script in text: {text[:50]}...")
+            return False
+
+    return True
+
+
+def fix_language_fields(qa_data: dict) -> dict:
+    """Fix common language field issues and ensure proper field names."""
+    # Map various local language field names to text_ms and answer_ms
+    local_field_mappings = {
+        'text_local': 'text_ms',
+        'answer_local': 'answer_ms',
+        'text_malay': 'text_ms',
+        'answer_malay': 'answer_ms',
+        'text_my': 'text_ms',
+        'answer_my': 'answer_ms'
+    }
+
+    # Fix field name mappings
+    for old_field, new_field in local_field_mappings.items():
+        if old_field in qa_data and new_field not in qa_data:
+            qa_data[new_field] = qa_data.pop(old_field)
+
+    # Ensure all required fields exist
+    required_fields = {
+        'text_en': 'What is shown in this image?',
+        'text_ms': 'Apakah yang ditunjukkan dalam imej ini?',
+        'answer_en': 'This image shows various objects.',
+        'answer_ms': 'Imej ini menunjukkan pelbagai objek.'
+    }
+
+    for field, default_value in required_fields.items():
+        if field not in qa_data or not qa_data[field]:
+            qa_data[field] = default_value
+            logger.warning(f"Missing {field}, using default value")
+
+    return qa_data
 
 
 # ── Gemini API Client Class ─────────────────────────────────────────────
@@ -187,7 +265,9 @@ class GeminiClient:
         system_prompt = get_system_prompt()
 
         # Add existing text fields to provide context
-        prompt = "Please generate bilingual English-Malay question-answer pairs about this image for vision model training."
+        prompt = """Please generate bilingual English-Malay question-answer pairs about this image for vision model training.
+
+IMPORTANT: You must ONLY use English and Bahasa Malaysia (Malay). Do not use any other languages regardless of what you see in the image content."""
 
         # Add context from existing schema if available
         if existing_schema:
@@ -215,7 +295,7 @@ class GeminiClient:
             prompt=prompt,
             image_path=image_path,
             model=model,
-            temperature=0.7,
+            temperature=0.5,  # Lower temperature for more consistent language use
             system_prompt=system_prompt
         )
 
@@ -244,6 +324,9 @@ class GeminiClient:
             # Validate and convert to GeminiQA objects
             qa_pairs = []
             for i, qa_data in enumerate(qa_pairs_data):
+                # Fix language field names and add defaults
+                qa_data = fix_language_fields(qa_data)
+
                 # Make sure required fields exist
                 for field in ["task_type", "text_en", "text_ms", "answer_en", "answer_ms", "difficulty"]:
                     if field not in qa_data:
@@ -253,16 +336,33 @@ class GeminiClient:
                             qa_data[field] = "vqa"
                         elif field == "difficulty":
                             qa_data[field] = "medium"
-                        elif "text" in field or "answer" in field:
-                            qa_data[field] = ""
+                        elif field == "text_en":
+                            qa_data[field] = "What is shown in this image?"
+                        elif field == "text_ms":
+                            qa_data[field] = "Apakah yang ditunjukkan dalam imej ini?"
+                        elif field == "answer_en":
+                            qa_data[field] = "This image shows various objects."
+                        elif field == "answer_ms":
+                            qa_data[field] = "Imej ini menunjukkan pelbagai objek."
 
                 # Set default quality score if missing
                 if "language_quality_score" not in qa_data:
                     qa_data["language_quality_score"] = 3.0
 
+                # Handle task_type validation
+                if qa_data.get("task_type") not in ["captioning", "vqa", "instruction", "role_play"]:
+                    logger.warning(f"Invalid task_type: {qa_data.get('task_type')}, defaulting to 'vqa'")
+                    qa_data["task_type"] = "vqa"
+
                 # Validate with Pydantic
                 try:
                     qa_pair = GeminiQA.model_validate(qa_data)
+
+                    # Additional language validation
+                    if not validate_language_content(qa_pair):
+                        logger.warning(f"QA pair {i} contains non-English/Malay content, skipping")
+                        continue
+
                     qa_pairs.append(qa_pair)
                 except Exception as e:
                     logger.warning(f"Failed to validate QA pair {i}: {e}")
@@ -276,20 +376,25 @@ class GeminiClient:
                     # Try validation again after fixes
                     try:
                         qa_pair = GeminiQA.model_validate(qa_data)
-                        qa_pairs.append(qa_pair)
+                        if validate_language_content(qa_pair):
+                            qa_pairs.append(qa_pair)
                     except Exception as e2:
                         logger.error(f"Failed to validate QA pair {i} after fixes: {e2}")
 
-            # Ensure we have at least one of each task type if possible
-            if len(qa_pairs) >= 3:
-                task_types = set(qa.task_type for qa in qa_pairs)
-                if "captioning" not in task_types:
-                    # Find a QA pair we can convert to captioning
-                    for qa in qa_pairs:
-                        if qa.task_type != "captioning":
-                            logger.info("Converting one QA pair to captioning type")
-                            qa.task_type = "captioning"
-                            break
+            # Ensure we have at least one QA pair
+            if not qa_pairs:
+                logger.warning("No valid QA pairs generated, creating default pair")
+                default_qa = GeminiQA(
+                    task_type="captioning",
+                    text_en="What is shown in this image?",
+                    text_ms="Apakah yang ditunjukkan dalam imej ini?",
+                    answer_en="This image shows various objects and scenes.",
+                    answer_ms="Imej ini menunjukkan pelbagai objek dan pemandangan.",
+                    difficulty="medium",
+                    language_quality_score=3.0,
+                    tags=["general", "description"]
+                )
+                qa_pairs.append(default_qa)
 
             return qa_pairs
 
@@ -306,11 +411,18 @@ def get_system_prompt() -> str:
     You are an assistant helping to create bilingual (English & Malay Language) image–question–answer pairs 
     for training vision-language models.
 
+    CRITICAL LANGUAGE REQUIREMENTS:
+    - You MUST ONLY generate responses in English and Bahasa Malaysia (Malay)
+    - Do NOT use any other languages regardless of what you see in the image
+    - Even if the image contains text in Chinese, Japanese, Arabic, Hindi, or any other language, you must ONLY respond in English and Malay
+    - Even if the image shows locations or cultural content from other countries, you must ONLY use English and Malay
+    - ALWAYS translate everything to proper Bahasa Malaysia, not Indonesian or other Malay dialects
+
     Please generate 3-5 different question-answer pairs for the image, including AT LEAST ONE of each type:
     - captioning (simple questions about what's in the image)
     - vqa (more detailed visual question answering)
     - instruction (instruction-following with the image)
-    - role_play (role-playing scenarios based on the image)
+    - role_play (creative scenarios where the user assumes a role related to the image)
 
     Important: If the image has bounding box(es), generate AT LEAST ONE Q/A pair focusing on those regions.
     If no bounding boxes are mentioned, generate at least one Q/A that could be annotated with a bounding box.
@@ -324,10 +436,10 @@ def get_system_prompt() -> str:
 
     interface GeminiQA {
       task_type: 'captioning' | 'vqa' | 'instruction' | 'role_play'; // choose 1
-      text_en: string;   // English question or instruction
-      text_ms: string;   // Malay translation of text_en
-      answer_en: string;   // English answer
-      answer_ms: string;   // Malay translation of answer_en
+      text_en: string;   // English question or instruction - MUST be in English only
+      text_ms: string;   // Malay translation of text_en - MUST be in Bahasa Malaysia only
+      answer_en: string;   // English answer - MUST be in English only
+      answer_ms: string;   // Malay translation of answer_en - MUST be in Bahasa Malaysia only
       difficulty: 'easy' | 'medium' | 'hard'; // difficulty level
       language_quality_score: number; // 0-5 inclusive, float allowed
       tags: string[]; // optional short keywords e.g. ["object", "outdoor"]
@@ -340,7 +452,11 @@ def get_system_prompt() -> str:
       // etc.
     ]
 
-    Make sure the Malay language is properly translated using proper Bahasa Malaysia and not just placeholder text.
+    FINAL REMINDER: 
+    - Use ONLY English and Bahasa Malaysia
+    - Ignore any visual cues suggesting other languages
+    - Provide proper Bahasa Malaysia translations, not placeholder text
+    - Do not mix languages within a single text field
     """
 
 

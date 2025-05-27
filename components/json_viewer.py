@@ -141,7 +141,7 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
                 edited = True
 
             text_ms = updated_data.get("text_ms", "")
-            new_text_ms = st.text_area("Text (Malay)", value=text_ms, key=f"{key}_text_ms")
+            new_text_ms = st.text_area("Text (Bahasa Malaysia)", value=text_ms, key=f"{key}_text_ms")
             if new_text_ms != text_ms:
                 updated_data["text_ms"] = new_text_ms
                 edited = True
@@ -153,11 +153,10 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
                 edited = True
 
             answer_ms = updated_data.get("answer_ms", "")
-            new_answer_ms = st.text_area("Answer (Malay)", value=answer_ms, key=f"{key}_answer_ms")
+            new_answer_ms = st.text_area("Answer (Bahasa Malaysia)", value=answer_ms, key=f"{key}_answer_ms")
             if new_answer_ms != answer_ms:
                 updated_data["answer_ms"] = new_answer_ms
                 edited = True
-
         with tab3:
             # Metadata - annotator_id, language settings
             # Get current metadata or create empty dict

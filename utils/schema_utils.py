@@ -1,3 +1,4 @@
+#newest version
 """Pydantic models for the annotation schema, using filename stem as default ID."""
 
 from __future__ import annotations
@@ -39,8 +40,8 @@ class VLMSchema(BaseModel):
     image_path: str = Field(..., description="Original relative path of the image.")  # Path is required
     task_type: Literal["captioning", "vqa", "instruction", "role_play"] = "vqa"  # Default
 
-    text_ms: str = ""  # Question or instruction in Malay
-    answer_ms: str = ""  # Answer in Malay
+    text_ms: str = ""  # Question or instruction in Malay (Bahasa Malaysia)
+    answer_ms: str = ""  # Answer in Malay (Bahasa Malaysia)
     text_en: str = ""  # Question or instruction in English
     answer_en: str = ""  # Answer in English
 
@@ -63,6 +64,13 @@ class VLMSchema(BaseModel):
             # Set image_id only if it's missing or empty, and image_path is present
             if not image_id and image_path and isinstance(image_path, str):
                 data['image_id'] = Path(image_path).stem
+
+            # Handle backward compatibility: migrate text_local/answer_local to text_ms/answer_ms
+            if 'text_local' in data and not data.get('text_ms'):
+                data['text_ms'] = data.pop('text_local')  # Move and remove old field
+            if 'answer_local' in data and not data.get('answer_ms'):
+                data['answer_ms'] = data.pop('answer_local')  # Move and remove old field
+
         return data
 
     # Convenience Methods
