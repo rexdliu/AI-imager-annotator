@@ -1,4 +1,3 @@
-#newest version
 """Pydantic models for the annotation schema, using filename stem as default ID."""
 
 from __future__ import annotations
@@ -13,9 +12,9 @@ from pydantic import BaseModel, Field, model_validator, ConfigDict
 # ── Sub‑models ────────────────────────────────────────────────────────────
 
 class LanguageInfo(BaseModel):
-    source: List[Literal["local", "en"]] = Field(default=["local", "en"],
-                                               description="Languages present in text_local / text_en")
-    target: Optional[List[Literal["local", "en"]]] = Field(default=["local", "en"],
+    source: List[Literal["ms", "en"]] = Field(default=["ms", "en"],
+                                               description="Languages present in text_ms / text_en")
+    target: Optional[List[Literal["ms", "en"]]] = Field(default=["ms", "en"],
                                                         description="Target languages for annotations")
 
 
@@ -38,10 +37,10 @@ class VLMSchema(BaseModel):
     # image_id defaults to stem of image_path if not provided
     image_id: str = Field("", description="Unique identifier (defaults to filename stem).")
     image_path: str = Field(..., description="Original relative path of the image.")  # Path is required
-    task_type: Literal["captioning", "vqa", "instruction"] = "vqa"  # Default
+    task_type: Literal["captioning", "vqa", "instruction", "role_play"] = "vqa"  # Default
 
-    text_local: str = ""  # Question or instruction in local language
-    answer_local: str = ""  # Answer in local language
+    text_ms: str = ""  # Question or instruction in Malay
+    answer_ms: str = ""  # Answer in Malay
     text_en: str = ""  # Question or instruction in English
     answer_en: str = ""  # Answer in English
 

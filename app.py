@@ -173,8 +173,8 @@ def handle_confirm_annotation(img_path: str, scaled_back_boxes: List[BBox], box_
             core_data["tags"] = existing_schema.tags
             core_data["text_en"] = existing_schema.text_en
             core_data["answer_en"] = existing_schema.answer_en
-            core_data["text_local"] = existing_schema.text_local
-            core_data["answer_local"] = existing_schema.answer_local
+            core_data["text_ms"] = existing_schema.text_ms  # Updated to text_ms
+            core_data["answer_ms"] = existing_schema.answer_ms  # Updated to answer_ms
             core_data["task_type"] = existing_schema.task_type
             core_data["language"] = existing_schema.language
             core_data["split"] = existing_schema.split
@@ -232,9 +232,9 @@ def handle_qa_selection(qa: GeminiQA, schema: VLMSchema) -> Optional[VLMSchema]:
         # Update schema fields with the selected QA pair
         updated_schema.task_type = qa.task_type
         updated_schema.text_en = qa.text_en
-        updated_schema.text_local = qa.text_local
+        updated_schema.text_ms = qa.text_ms  # Updated to text_ms
         updated_schema.answer_en = qa.answer_en
-        updated_schema.answer_local = qa.answer_local
+        updated_schema.answer_ms = qa.answer_ms  # Updated to answer_ms
         updated_schema.difficulty = qa.difficulty
         updated_schema.tags = qa.tags or []
 

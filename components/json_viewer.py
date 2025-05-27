@@ -1,4 +1,3 @@
-#newest version
 """JSON viewer with edit capabilities and syntax highlighting for schema display and editing."""
 
 import json
@@ -87,7 +86,7 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
 
         with tab1:
             # Task type, difficulty, source, split
-            task_options = ["captioning", "vqa", "instruction"]
+            task_options = ["captioning", "vqa", "instruction", "role_play"]
             current_task = updated_data.get("task_type", "vqa")
             new_task = st.selectbox("Task Type",
                                     task_options,
@@ -134,17 +133,17 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
                 edited = True
 
         with tab2:
-            # Text fields - text_en, text_local, answer_en, answer_local
+            # Text fields - text_en, text_ms, answer_en, answer_ms
             text_en = updated_data.get("text_en", "")
             new_text_en = st.text_area("Text (English)", value=text_en, key=f"{key}_text_en")
             if new_text_en != text_en:
                 updated_data["text_en"] = new_text_en
                 edited = True
 
-            text_local = updated_data.get("text_local", "")
-            new_text_local = st.text_area("Text (Local Language)", value=text_local, key=f"{key}_text_local")
-            if new_text_local != text_local:
-                updated_data["text_local"] = new_text_local
+            text_ms = updated_data.get("text_ms", "")
+            new_text_ms = st.text_area("Text (Malay)", value=text_ms, key=f"{key}_text_ms")
+            if new_text_ms != text_ms:
+                updated_data["text_ms"] = new_text_ms
                 edited = True
 
             answer_en = updated_data.get("answer_en", "")
@@ -153,10 +152,10 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
                 updated_data["answer_en"] = new_answer_en
                 edited = True
 
-            answer_local = updated_data.get("answer_local", "")
-            new_answer_local = st.text_area("Answer (Local Language)", value=answer_local, key=f"{key}_answer_local")
-            if new_answer_local != answer_local:
-                updated_data["answer_local"] = new_answer_local
+            answer_ms = updated_data.get("answer_ms", "")
+            new_answer_ms = st.text_area("Answer (Malay)", value=answer_ms, key=f"{key}_answer_ms")
+            if new_answer_ms != answer_ms:
+                updated_data["answer_ms"] = new_answer_ms
                 edited = True
 
         with tab3:
@@ -201,13 +200,13 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
 
             # Language source options
             lang_source_options = [
-                ["local", "en"],  # Both languages
-                ["local"],        # Local language only
+                ["ms", "en"],  # Both languages
+                ["ms"],        # Malay language only
                 ["en"]            # English only
             ]
 
             # Convert current source to list if it's not already
-            current_source = language_info.get("source", ["local", "en"])
+            current_source = language_info.get("source", ["ms", "en"])
             # Find the index in options list
             current_source_index = 0
             for i, opt in enumerate(lang_source_options):
@@ -215,7 +214,7 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
                     current_source_index = i
                     break
 
-            source_labels = ["Both (local, en)", "Local language only", "English (en) only"]
+            source_labels = ["Both (Malay, English)", "Malay only", "English only"]
             selected_source_label = st.radio("Source Language",
                                             source_labels,
                                             index=current_source_index,
@@ -231,7 +230,7 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
 
             # Language target options (similar to source)
             if "target" in language_info and language_info["target"]:
-                current_target = language_info.get("target", ["local", "en"])
+                current_target = language_info.get("target", ["ms", "en"])
                 current_target_index = 0
                 for i, opt in enumerate(lang_source_options):
                     if sorted(opt) == sorted(current_target):
@@ -240,7 +239,7 @@ def interactive_json_editor(schema_model: VLMSchema, key: str = "json_editor") -
             else:
                 current_target_index = 0  # Default to both
 
-            target_labels = ["Both (local, en)", "Local language only", "English (en) only", "None"]
+            target_labels = ["Both (Malay, English)", "Malay only", "English only", "None"]
             selected_target_label = st.radio("Target Language",
                                             target_labels,
                                             index=current_target_index if "target" in language_info and language_info[
@@ -366,11 +365,11 @@ def qa_card_selector(qa_pairs: List[GeminiQA], on_select_callback: Callable[[Gem
                 </div>
                 <div style="font-size: 0.9em; margin-bottom: 10px;">
                     <div><strong>🇬🇧 Q:</strong> {qa.text_en[:100] + '...' if len(qa.text_en) > 100 else qa.text_en}</div>
-                    <div><strong>🌐 Q:</strong> {qa.text_local[:100] + '...' if len(qa.text_local) > 100 else qa.text_local}</div>
+                    <div><strong>🇲🇾 Q:</strong> {qa.text_ms[:100] + '...' if len(qa.text_ms) > 100 else qa.text_ms}</div>
                 </div>
                 <div style="font-size: 0.9em; margin-bottom: 10px;">
                     <div><strong>🇬🇧 A:</strong> {qa.answer_en[:100] + '...' if len(qa.answer_en) > 100 else qa.answer_en}</div>
-                    <div><strong>🌐 A:</strong> {qa.answer_local[:100] + '...' if len(qa.answer_local) > 100 else qa.answer_local}</div>
+                    <div><strong>🇲🇾 A:</strong> {qa.answer_ms[:100] + '...' if len(qa.answer_ms) > 100 else qa.answer_ms}</div>
                 </div>
             </div>
             """, unsafe_allow_html=True)
@@ -391,9 +390,9 @@ def qa_card_selector(qa_pairs: List[GeminiQA], on_select_callback: Callable[[Gem
                 st.markdown(f"**Answer:** {qa.answer_en}")
 
             with col2:
-                st.markdown("#### Local Language")
-                st.markdown(f"**Question:** {qa.text_local}")
-                st.markdown(f"**Answer:** {qa.answer_local}")
+                st.markdown("#### Malay")
+                st.markdown(f"**Question:** {qa.text_ms}")
+                st.markdown(f"**Answer:** {qa.answer_ms}")
 
             st.markdown(f"**Tags:** {', '.join(qa.tags) if qa.tags else 'None'}")
             st.markdown(f"**Quality Score:** {qa.language_quality_score}/5")
